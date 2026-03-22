@@ -1,0 +1,63 @@
+name: Gerar APK do Cultivar
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🔽 Baixar código
+        uses: actions/checkout@v4
+      
+      - name: ⚙️ Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: 📦 Criar arquivos necessários
+        run: |
+          # Criar pasta www
+          mkdir -p www
+          cp index.html www/
+          
+          # Criar package.json
+          echo '{
+            "name": "cultivar-app",
+            "version": "1.0.0",
+            "description": "Gestão Agrícola"
+          }' > package.json
+          
+          # Criar manifest.json
+          echo '{
+            "name": "Cultivar",
+            "short_name": "Cultivar",
+            "start_url": "/",
+            "display": "standalone",
+            "theme_color": "#CD853F",
+            "background_color": "#D2B48C",
+            "icons": []
+          }' > manifest.json
+      
+      - name: 📦 Instalar Capacitor
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init Cultivar br.com.cultivar.app --web-dir=www
+          npx cap add android
+          npx cap sync
+      
+      - name: 🛠️ Gerar APK com Android Studio
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cd ..
+      
+      - name: 📤 Fazer upload do APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cultivar-APK
+          path: android/app/build/outputs/apk/debug/*.apk
