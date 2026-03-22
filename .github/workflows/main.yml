@@ -1,4 +1,4 @@
-name: Gerar APK
+name: Gerar APK do Cultivar
 
 on:
   push:
@@ -10,57 +10,51 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - name: 🔽 Baixar código
+        uses: actions/checkout@v4
       
-      - name: Criar arquivos necessários
+      - name: 📁 Criar estrutura
         run: |
-          # Criar pasta www
           mkdir -p www
           cp index.html www/
-          
-          # Criar package.json
-          cat > package.json << 'EOF'
-          {
-            "name": "cultivar",
-            "version": "1.0.0"
-          }
-          EOF
-          
-          # Criar manifest.json
+          echo "Estrutura criada com sucesso"
+      
+      - name: 📦 Instalar PWABuilder
+        run: |
+          npm install -g @pwabuilder/cli
+          echo "PWABuilder instalado"
+      
+      - name: 📄 Criar manifest.json
+        run: |
           cat > manifest.json << 'EOF'
           {
             "name": "Cultivar",
             "short_name": "Cultivar",
+            "description": "Gestão Agrícola",
             "start_url": "index.html",
             "display": "standalone",
             "theme_color": "#CD853F",
             "background_color": "#D2B48C",
-            "icons": []
+            "icons": [
+              {
+                "src": "icon.png",
+                "sizes": "192x192",
+                "type": "image/png"
+              }
+            ]
           }
           EOF
+          echo "Manifest criado"
       
-      - name: Instalar PWA Builder
-        run: npm install -g @pwabuilder/cli
-      
-      - name: Gerar APK
-        run: pwabuilder build --platform android --manifest manifest.json || echo "Continuando..."
-      
-      - name: Procurar APK
+      - name: 🔨 Gerar APK
         run: |
-          find . -name "*.apk" -exec cp {} ./cultivar.apk \; 2>/dev/null || echo "Arquivo APK não encontrado"
-          ls -la
-          
-      - name: Criar APK alternativo (se necessário)
-        run: |
-          if [ ! -f cultivar.apk ]; then
-            echo "Criando APK simples..."
-            echo "APK gerado com sucesso" > cultivar.apk.txt
-          fi
+          pwabuilder build --platform android --manifest manifest.json --output ./
+          echo "APK gerado"
       
-      - name: Upload do artefato
+      - name: 📤 Upload do APK
         uses: actions/upload-artifact@v4
         with:
-          name: cultivar-app
+          name: Cultivar-APK
           path: |
             *.apk
-            *.txt
+            **/*.apk
