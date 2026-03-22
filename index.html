@@ -1,606 +1,77 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cultivar - Gestão Agrícola</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: linear-gradient(135deg, #D2B48C 0%, #C4A484 100%); min-height: 100vh; padding: 16px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        
-        .header-logo {
-            background: rgba(255,248,225,0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 24px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 15px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-        .logo-container { display: flex; align-items: center; gap: 15px; }
-        .logo-preview { width: 50px; height: 50px; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, #F4A460, #CD853F); display: flex; align-items: center; justify-content: center; }
-        .logo-preview i { font-size: 28px; color: white; }
-        .logo-preview img { width: 100%; height: 100%; object-fit: cover; }
-        .btn-logo { background: #f0e6d2; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; color: #CD853F; }
-        h1 { font-size: 1.4em; font-weight: 600; background: linear-gradient(135deg, #CD853F, #F4A460); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        
-        .menu {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            background: rgba(255,248,225,0.95);
-            backdrop-filter: blur(10px);
-            padding: 12px;
-            border-radius: 60px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .menu-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 40px;
-            cursor: pointer;
-            background: transparent;
-            font-size: 0.9em;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #8B5A2B;
-            transition: all 0.2s;
-        }
-        .menu-btn.ativo { background: linear-gradient(135deg, #F4A460, #CD853F); color: white; box-shadow: 0 4px 12px rgba(205,133,63,0.3); }
-        
-        .content {
-            background: rgba(255,248,225,0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 32px;
-            padding: 24px;
-            min-height: 500px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #F4A460, #CD853F);
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-size: 0.9em;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(205,133,63,0.3); }
-        .btn-danger { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); }
-        .btn-warning { background: linear-gradient(135deg, #ffa502, #ff8c00); }
-        .btn-info { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-        .btn-camera { background: linear-gradient(135deg, #a55d35, #8b4513); }
-        .btn-location { background: linear-gradient(135deg, #ff5722, #f4511e); }
-        
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
-        .card {
-            background: #FFF8ED;
-            border-radius: 24px;
-            padding: 20px;
-            transition: all 0.3s;
-            border: 1px solid rgba(205,133,63,0.2);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            position: relative;
-        }
-        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }
-        .card h3 { font-size: 1.2em; color: #CD853F; margin-bottom: 12px; padding-right: 50px; }
-        .card p { color: #8B5A2B; font-size: 0.9em; margin: 8px 0; }
-        .card-actions { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; }
-        
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .stat-card { background: linear-gradient(135deg, #FFF8ED, #FDF5E6); padding: 20px; border-radius: 24px; text-align: center; border: 1px solid rgba(205,133,63,0.3); }
-        .stat-card h3 { font-size: 2em; color: #CD853F; }
-        .stat-card p { color: #8B5A2B; }
-        
-        .badge { display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 0.75em; font-weight: 600; }
-        .badge-baixa { background: #e8f5e9; color: #2E7D32; }
-        .badge-media { background: #fff3e0; color: #ef6c00; }
-        .badge-alta { background: #ffebee; color: #c62828; }
-        .badge-critica { background: #ffebee; color: #c62828; }
-        
-        .mapa-container { height: 450px; width: 100%; margin: 20px 0; border-radius: 24px; overflow: hidden; border: 2px solid rgba(205,133,63,0.5); }
-        #mapaDesenho { height: 100%; width: 100%; }
-        
-        .mapa-tipos {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin: 15px 0;
-            padding: 12px;
-            background: #FFF8ED;
-            border-radius: 20px;
-        }
-        .tipo-mapa {
-            background: white;
-            border: 1px solid #ddd;
-            padding: 8px 15px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-size: 0.85em;
-            transition: all 0.2s;
-            color: #8B5A2B;
-        }
-        .tipo-mapa:hover { background: #F4A460; color: white; border-color: #F4A460; }
-        .tipo-mapa.ativo { background: #CD853F; color: white; border-color: #CD853F; }
-        
-        .controles-desenho { background: #FFF8ED; padding: 16px; border-radius: 20px; margin: 16px 0; display: flex; gap: 10px; flex-wrap: wrap; }
-        .info-area { background: #FFF8ED; padding: 16px; border-radius: 20px; margin: 16px 0; font-weight: 500; color: #CD853F; border: 1px solid #F4A460; }
-        .localizacao-info { background: #FFF8ED; padding: 16px; border-radius: 20px; margin: 16px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border: 1px solid #F4A460; }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            padding: 16px;
-        }
-        .modal-content {
-            background: #FFF8ED;
-            border-radius: 32px;
-            padding: 24px;
-            width: 100%;
-            max-width: 600px;
-            max-height: 85vh;
-            overflow-y: auto;
-        }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #CD853F; }
-        input, select, textarea { width: 100%; padding: 12px 16px; border: 1px solid #F4A460; border-radius: 16px; font-size: 1em; background: white; color: #8B5A2B; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: #CD853F; box-shadow: 0 0 0 3px rgba(205,133,63,0.1); }
-        
-        .fotos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; margin: 16px 0; }
-        .foto-item { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 1; border: 2px solid #F4A460; }
-        .foto-item img { width: 100%; height: 100%; object-fit: cover; }
-        .foto-item button { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 40px; width: 28px; height: 28px; cursor: pointer; }
-        
-        .ponto-marcador { background: #ff6b6b; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-        
-        .pragas-container { max-height: 200px; overflow-y: auto; border: 1px solid #F4A460; border-radius: 12px; padding: 10px; margin: 10px 0; background: white; }
-        .praga-item { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #F4A460; }
-        .praga-item input { width: auto; margin-right: 10px; }
-        .praga-tipo { font-size: 0.8em; padding: 3px 8px; border-radius: 12px; margin-left: 10px; }
-        .tipo-praga { background: #ffebee; color: #c62828; }
-        .tipo-doenca { background: #fff3e0; color: #ef6c00; }
-        
-        .add-praga-manual { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        .add-praga-manual input { flex: 2; }
-        .add-praga-manual select { flex: 1; }
-        .responsavel-info { background: #FFF8ED; padding: 16px; border-radius: 20px; margin: 16px 0; display: flex; align-items: center; gap: 15px; border: 1px solid #F4A460; }
-        .responsavel-avatar { width: 50px; height: 50px; background: #CD853F; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5em; }
-        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .modal-buttons button { flex: 1; padding: 12px; border-radius: 40px; cursor: pointer; font-size: 1em; }
-        #camera-preview { width: 100%; max-height: 300px; object-fit: cover; border-radius: 20px; margin: 12px 0; }
-        .camera-controls { display: flex; gap: 10px; }
-        .camera-controls button { flex: 1; padding: 12px; border-radius: 40px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header-logo">
-            <div class="logo-container">
-                <div class="logo-preview" id="logoPreview"><i class="fas fa-leaf"></i></div>
-                <div class="logo-upload">
-                    <input type="file" id="logoInput" accept="image/*" style="display: none;" onchange="uploadLogo(event)">
-                    <button class="btn-logo" onclick="document.getElementById('logoInput').click()"><i class="fas fa-upload"></i> Logo</button>
-                    <button class="btn-logo" onclick="removerLogo()"><i class="fas fa-times"></i> Remover</button>
-                </div>
-            </div>
-            <h1><i class="fas fa-leaf"></i> Cultivar</h1>
-        </div>
-        
-        <div class="menu">
-            <button class="menu-btn ativo" onclick="mostrarDashboard()">Início</button>
-            <button class="menu-btn" onclick="mostrarProdutores()">Produtores</button>
-            <button class="menu-btn" onclick="mostrarPropriedades()">Propriedades</button>
-            <button class="menu-btn" onclick="mostrarTalhoes()">Talhões</button>
-            <button class="menu-btn" onclick="mostrarMonitoramentos()">Monitoramentos</button>
-            <button class="menu-btn" onclick="mostrarGraficos()">Gráficos</button>
-        </div>
+name: Gerar APK do Cultivar
 
-        <div id="conteudo" class="content"></div>
-    </div>
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-    <!-- Modais -->
-    <div id="modalCamera" class="modal"><div class="modal-content"><h2><i class="fas fa-camera"></i> Tirar Foto</h2><video id="camera-preview" autoplay playsinline></video><div class="camera-controls"><button class="btn btn-success" onclick="capturarFoto()">Capturar</button><button class="btn btn-danger" onclick="fecharCamera()">Cancelar</button></div><canvas id="camera-canvas" style="display: none;"></canvas></div></div>
-    <div id="modalProdutor" class="modal"><div class="modal-content"><h2 id="modalProdutorTitulo">Novo Produtor</h2><input type="hidden" id="produtorId"><div class="form-group"><label>Nome</label><input type="text" id="produtorNome"></div><div class="form-group"><label>CPF/CNPJ</label><input type="text" id="produtorDocumento"></div><div class="form-group"><label>Telefone</label><input type="text" id="produtorTelefone"></div><div class="form-group"><label>Email</label><input type="email" id="produtorEmail"></div><div class="modal-buttons"><button class="btn" onclick="fecharModal('produtor')">Cancelar</button><button class="btn btn-success" onclick="salvarProdutor()">Salvar</button></div></div></div>
-    <div id="modalPropriedade" class="modal"><div class="modal-content"><h2>Nova Propriedade</h2><div class="form-group"><label>Nome</label><input type="text" id="propNome"></div><div class="form-group"><label>Produtor</label><select id="propProdutorId"></select></div><div class="form-group"><label>Área (ha)</label><input type="number" id="propArea" step="0.1"></div><div class="form-group"><label>Endereço</label><input type="text" id="propEndereco"></div><div class="modal-buttons"><button class="btn" onclick="fecharModal('propriedade')">Cancelar</button><button class="btn btn-success" onclick="salvarPropriedade()">Salvar</button></div></div></div>
+jobs:
+  build:
+    runs-on: ubuntu-latest
     
-    <div id="modalTalhao" class="modal">
-        <div class="modal-content">
-            <h2>Desenhar Talhão</h2>
-            <div class="form-group"><label>Propriedade</label><select id="talhaoPropriedadeId"></select></div>
-            <div class="form-group"><label>Nome do Talhão</label><input type="text" id="talhaoNome"></div>
-            <div class="form-group"><label>Cultura</label><select id="talhaoCultura"><option>Soja</option><option>Milho</option><option>Café</option><option>Cana</option></select></div>
-            <div class="form-group"><label>Data Plantio</label><input type="date" id="talhaoDataPlantio"></div>
-            <div class="form-group"><label>Observações</label><textarea id="talhaoObs"></textarea></div>
-            
-            <div class="localizacao-info">
-                <i class="fas fa-map-marker-alt"></i>
-                <div><strong>Localização:</strong> <span id="localizacaoAtual">Clique em "Minha Localização"</span></div>
-                <button class="btn-location" onclick="puxarLocalizacao()">Minha Localização</button>
-            </div>
-            
-            <div class="mapa-tipos" id="mapaTipos">
-                <div class="tipo-mapa ativo" onclick="mudarTipoMapa('street')">🗺️ Rua</div>
-                <div class="tipo-mapa" onclick="mudarTipoMapa('satelite')">🛰️ Satélite</div>
-                <div class="tipo-mapa" onclick="mudarTipoMapa('terreno')">⛰️ Terreno</div>
-                <div class="tipo-mapa" onclick="mudarTipoMapa('escuro')">🌙 Escuro</div>
-            </div>
-            
-            <div class="controles-desenho">
-                <button class="btn-success" onclick="iniciarDesenho()" id="btnIniciar">Iniciar Desenho</button>
-                <button class="btn-warning" onclick="limparDesenho()">Limpar</button>
-                <button class="btn-info" onclick="desfazerPonto()">Desfazer</button>
-                <button class="btn-info" onclick="abrirSeletorKML()">Importar KML</button>
-                <button class="btn-warning" onclick="exportarComoKML()">Exportar KML</button>
-            </div>
-            
-            <div class="mapa-container">
-                <div id="mapaDesenho"></div>
-            </div>
-            
-            <div class="info-area" id="infoDesenho">
-                Pontos: <span id="contadorPontos">0</span> | Área: <span id="talhaoArea">0,00</span> ha
-            </div>
-            
-            <div class="foto-actions"><button class="btn-camera" onclick="abrirCamera('talhao')">Câmera</button></div>
-            <div id="fotosPreview" class="fotos-grid"></div>
-            
-            <div class="modal-buttons">
-                <button class="btn" onclick="fecharModal('talhao')">Cancelar</button>
-                <button class="btn btn-success" onclick="salvarTalhao()">Salvar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modalMonitoramento" class="modal">
-        <div class="modal-content">
-            <h2>Novo Monitoramento</h2>
-            <div class="form-group"><label>Talhão</label><select id="monitoramentoTalhaoId" onchange="carregarPragas()"></select></div>
-            <div class="responsavel-info"><div class="responsavel-avatar"><i class="fas fa-user"></i></div><div class="responsavel-dados"><input type="text" id="responsavelNome" value="Técnico Agrícola"></div></div>
-            <div class="form-group"><label>Data e Hora</label><input type="datetime-local" id="monitoramentoDataHora"></div>
-            <div class="form-group"><label>Pragas Comuns</label><div id="pragasComuns" class="pragas-container"></div></div>
-            <div class="add-praga-manual"><input type="text" id="novaPragaNome" placeholder="Nova praga"><select id="novaPragaTipo"><option value="praga">Praga</option><option value="doenca">Doença</option></select><button class="btn-info" onclick="adicionarPragaManual()">Adicionar</button></div>
-            <div class="form-group"><label>Pragas Selecionadas</label><div id="pragasSelecionadas" class="pragas-container"></div></div>
-            <div class="form-group"><label>Severidade</label><select id="monitoramentoSeveridade"><option>baixa</option><option>media</option><option>alta</option><option>critica</option></select></div>
-            <div class="form-group"><label>Observações</label><textarea id="monitoramentoObs"></textarea></div>
-            <div class="foto-actions"><button class="btn-camera" onclick="abrirCamera('monitoramento')">Câmera</button></div>
-            <div id="fotosOcorrenciaPreview" class="fotos-grid"></div>
-            <div class="modal-buttons"><button class="btn" onclick="fecharModal('monitoramento')">Cancelar</button><button class="btn btn-success" onclick="salvarMonitoramento()">Salvar</button></div>
-        </div>
-    </div>
-
-    <script>
-        // Dados
-        let produtores = JSON.parse(localStorage.getItem('produtores')) || [];
-        let propriedades = JSON.parse(localStorage.getItem('propriedades')) || [];
-        let talhoes = JSON.parse(localStorage.getItem('talhoes')) || [];
-        let monitoramentos = JSON.parse(localStorage.getItem('monitoramentos')) || [];
-        let logo = localStorage.getItem('logo') || '';
-        
-        // Tipos de mapa
-        const tiposMapa = {
-            'street': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }),
-            'satelite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' }),
-            'terreno': L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png', { attribution: '© Stamen' }),
-            'escuro': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' })
-        };
-        
-        let tipoMapaAtual = 'street';
-        let camadaAtiva = null;
-        
-        const pragasPorCultura = {
-            'Soja': [{ nome: 'Ferrugem Asiática', tipo: 'doenca' }, { nome: 'Lagarta da Soja', tipo: 'praga' }, { nome: 'Percevejo', tipo: 'praga' }],
-            'Milho': [{ nome: 'Lagarta do Cartucho', tipo: 'praga' }, { nome: 'Cigarrinha', tipo: 'praga' }, { nome: 'Ferrugem', tipo: 'doenca' }],
-            'Café': [{ nome: 'Ferrugem do Café', tipo: 'doenca' }, { nome: 'Broca', tipo: 'praga' }],
-            'Cana': [{ nome: 'Broca da Cana', tipo: 'praga' }, { nome: 'Ferrugem', tipo: 'doenca' }]
-        };
-
-        let mapa = null, camadaDesenho = null, pontos = [], marcadores = [], modoEdicao = false;
-        let pragasSelecionadas = [], fotosTemp = [], fotosOcorrenciaTemp = [], streamCamera = null, tipoFotoAtual = '';
-        let localizacaoAtual = { lat: -23.5505, lng: -46.6333 };
-
-        // Função para formatar número no padrão brasileiro (ponto milhar, vírgula decimal)
-        function formatarNumeroBR(numero) {
-            if (isNaN(numero)) return '0,00';
-            // Arredondar para 2 casas decimais
-            let valor = Math.round(numero * 100) / 100;
-            // Separar parte inteira e decimal
-            let partes = valor.toFixed(2).split('.');
-            // Adicionar ponto para milhar
-            partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            // Juntar com vírgula decimal
-            return partes[0] + ',' + partes[1];
-        }
-
-        // Função para converter string brasileira para número
-        function converterParaNumero(str) {
-            if (typeof str === 'number') return str;
-            return parseFloat(str.replace(/\./g, '').replace(',', '.'));
-        }
-
-        // Logo
-        if (logo) { document.querySelector('#logoPreview').innerHTML = `<img src="${logo}" style="width:100%;height:100%;object-fit:cover">`; }
-        function uploadLogo(e) { let file = e.target.files[0]; if(file){ let r=new FileReader(); r.onload=ev=>{ logo=ev.target.result; localStorage.setItem('logo',logo); document.querySelector('#logoPreview').innerHTML=`<img src="${logo}" style="width:100%;height:100%;object-fit:cover">`; }; r.readAsDataURL(file); } }
-        function removerLogo() { logo=''; localStorage.removeItem('logo'); document.querySelector('#logoPreview').innerHTML='<i class="fas fa-leaf"></i>'; }
-
-        // Mudar tipo de mapa
-        function mudarTipoMapa(tipo) {
-            tipoMapaAtual = tipo;
-            document.querySelectorAll('.tipo-mapa').forEach(btn => btn.classList.remove('ativo'));
-            if (event && event.target) event.target.classList.add('ativo');
-            if (mapa && camadaAtiva) {
-                mapa.removeLayer(camadaAtiva);
-                camadaAtiva = tiposMapa[tipo].addTo(mapa);
-            }
-        }
-
-        // Inicializar mapa
-        function inicializarMapaDesenho() {
-            let div = document.getElementById('mapaDesenho');
-            if (!div) return;
-            if (mapa) mapa.remove();
-            mapa = L.map('mapaDesenho').setView([localizacaoAtual.lat, localizacaoAtual.lng], 15);
-            camadaAtiva = tiposMapa[tipoMapaAtual].addTo(mapa);
-            camadaDesenho = L.layerGroup().addTo(mapa);
-            setTimeout(() => mapa.invalidateSize(), 100);
-        }
-
-        function puxarLocalizacao() {
-            document.getElementById('localizacaoAtual').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    pos => {
-                        localizacaoAtual = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                        document.getElementById('localizacaoAtual').innerHTML = `${localizacaoAtual.lat.toFixed(6)}, ${localizacaoAtual.lng.toFixed(6)}`;
-                        if (mapa) {
-                            mapa.setView([localizacaoAtual.lat, localizacaoAtual.lng], 18);
-                            let icon = L.divIcon({ className: 'ponto-marcador', html: '<i class="fas fa-map-marker-alt"></i>', iconSize: [30, 30] });
-                            L.marker([localizacaoAtual.lat, localizacaoAtual.lng], { icon }).addTo(camadaDesenho).bindPopup('Você está aqui');
-                        }
-                    },
-                    err => document.getElementById('localizacaoAtual').innerHTML = 'Erro'
-                );
-            }
-        }
-
-        function iniciarDesenho() {
-            modoEdicao = true;
-            document.getElementById('btnIniciar').style.background = '#ff4444';
-            document.getElementById('btnIniciar').innerHTML = 'Desenhando...';
-            mapa.on('click', e => { if (modoEdicao) adicionarPonto(e.latlng); });
-        }
-
-        function adicionarPonto(latlng) {
-            pontos.push(latlng);
-            let icon = L.divIcon({ className: 'ponto-marcador', html: `${pontos.length}`, iconSize: [30, 30] });
-            let marker = L.marker(latlng, { icon }).addTo(camadaDesenho);
-            marcadores.push(marker);
-            if (pontos.length >= 2) desenharPoligono();
-            document.getElementById('contadorPontos').innerHTML = pontos.length;
-        }
-
-        function desenharPoligono() {
-            camadaDesenho.eachLayer(layer => { if (layer instanceof L.Polygon) camadaDesenho.removeLayer(layer); });
-            if (pontos.length >= 3) {
-                L.polygon(pontos, { color: '#CD853F', weight: 3 }).addTo(camadaDesenho);
-                let area = calcularArea(pontos);
-                document.getElementById('talhaoArea').innerHTML = formatarNumeroBR(area);
-                document.getElementById('infoDesenho').innerHTML = `Área: ${formatarNumeroBR(area)} ha | Pontos: ${pontos.length}`;
-            }
-        }
-
-        function calcularArea(pontos) {
-            let area = 0, n = pontos.length;
-            for (let i = 0; i < n; i++) { let j = (i + 1) % n; area += pontos[i].lat * pontos[j].lng - pontos[j].lat * pontos[i].lng; }
-            return Math.abs(area / 2) * 12321000;
-        }
-
-        function desfazerPonto() {
-            if (pontos.length > 0) {
-                pontos.pop();
-                let ultimo = marcadores.pop();
-                if (ultimo) camadaDesenho.removeLayer(ultimo);
-                desenharPoligono();
-                document.getElementById('contadorPontos').innerHTML = pontos.length;
-            }
-        }
-
-        function limparDesenho() {
-            pontos = [];
-            marcadores.forEach(m => camadaDesenho.removeLayer(m));
-            marcadores = [];
-            modoEdicao = false;
-            document.getElementById('btnIniciar').style.background = '#CD853F';
-            document.getElementById('btnIniciar').innerHTML = 'Iniciar Desenho';
-            document.getElementById('contadorPontos').innerHTML = '0';
-            document.getElementById('talhaoArea').innerHTML = '0,00';
-        }
-
-        // KML - Importação melhorada
-        let kmlInput = null;
-        
-        function criarInputKML() {
-            if (kmlInput) kmlInput.remove();
-            kmlInput = document.createElement('input');
-            kmlInput.type = 'file';
-            kmlInput.id = 'kmlInput';
-            kmlInput.accept = '.kml,.kmz,.xml';
-            kmlInput.style.display = 'none';
-            kmlInput.onchange = importarKML;
-            document.body.appendChild(kmlInput);
-        }
-
-        function abrirSeletorKML() {
-            if (!kmlInput) criarInputKML();
-            kmlInput.click();
-        }
-
-        function importarKML(event) {
-            let file = event.target.files[0];
-            if (!file) return;
-            
-            document.getElementById('infoDesenho').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando KML...';
-            
-            let reader = new FileReader();
-            reader.onload = function(ev) {
-                try {
-                    let texto = ev.target.result;
-                    let pontosKML = [];
-                    
-                    // Regex para encontrar coordenadas
-                    let regex = /<coordinates>([\s\S]*?)<\/coordinates>/gi;
-                    let match;
-                    
-                    while ((match = regex.exec(texto))) {
-                        let coordsTexto = match[1].trim();
-                        // Separar por espaços, quebras de linha ou tabs
-                        let coordPairs = coordsTexto.split(/\s+/);
-                        
-                        for (let coord of coordPairs) {
-                            let partes = coord.trim().split(',');
-                            if (partes.length >= 2) {
-                                let lng = parseFloat(partes[0]);
-                                let lat = parseFloat(partes[1]);
-                                if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-                                    pontosKML.push({ lat, lng });
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Remover pontos duplicados consecutivos
-                    let pontosUnicos = [];
-                    for (let i = 0; i < pontosKML.length; i++) {
-                        if (i === 0 || 
-                            pontosKML[i].lat !== pontosKML[i-1].lat || 
-                            pontosKML[i].lng !== pontosKML[i-1].lng) {
-                            pontosUnicos.push(pontosKML[i]);
-                        }
-                    }
-                    
-                    if (pontosUnicos.length >= 3) {
-                        limparDesenho();
-                        pontosUnicos.forEach((p, idx) => {
-                            let latlng = L.latLng(p.lat, p.lng);
-                            pontos.push(latlng);
-                            let icon = L.divIcon({ className: 'ponto-marcador', html: `${idx+1}`, iconSize: [30, 30] });
-                            let marker = L.marker(latlng, { icon }).addTo(camadaDesenho);
-                            marcadores.push(marker);
-                        });
-                        desenharPoligono();
-                        if (mapa && pontos.length) {
-                            let grupo = L.featureGroup(marcadores);
-                            mapa.fitBounds(grupo.getBounds());
-                        }
-                        document.getElementById('infoDesenho').innerHTML = `✅ KML importado! ${pontos.length} pontos | Área: ${document.getElementById('talhaoArea').innerHTML} ha`;
-                    } else {
-                        document.getElementById('infoDesenho').innerHTML = '❌ Nenhum polígono válido encontrado no KML';
-                        alert('Nenhum polígono válido encontrado no arquivo KML. Verifique se o arquivo contém coordenadas.');
-                    }
-                } catch (error) {
-                    console.error('Erro ao processar KML:', error);
-                    document.getElementById('infoDesenho').innerHTML = '❌ Erro ao processar KML';
-                    alert('Erro ao processar o arquivo KML. Verifique se o formato está correto.');
-                }
-            };
-            
-            reader.onerror = function() {
-                document.getElementById('infoDesenho').innerHTML = '❌ Erro ao ler arquivo';
-                alert('Erro ao ler o arquivo');
-            };
-            
-            reader.readAsText(file);
-        }
-
-        function exportarComoKML() {
-            if (pontos.length < 3) { alert('Desenhe um polígono primeiro'); return; }
-            let kml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>Talhão Cultivar</name><Polygon><outerBoundaryIs><LinearRing><coordinates>`;
-            pontos.forEach(p => kml += `\n${p.lng},${p.lat},0`);
-            kml += `\n${pontos[0].lng},${pontos[0].lat},0`;
-            kml += `</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>`;
-            let blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
-            let url = URL.createObjectURL(blob);
-            let a = document.createElement('a');
-            a.href = url;
-            a.download = `talhao_${new Date().toISOString().slice(0,10)}.kml`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // Câmera
-        async function abrirCamera(tipo) { tipoFotoAtual=tipo; try{ streamCamera=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}); document.getElementById('camera-preview').srcObject=streamCamera; document.getElementById('modalCamera').style.display='flex'; }catch(e){ alert('Erro ao acessar câmera'); } }
-        function fecharCamera() { if(streamCamera) streamCamera.getTracks().forEach(t=>t.stop()); document.getElementById('modalCamera').style.display='none'; }
-        function capturarFoto() { let video=document.getElementById('camera-preview'), canvas=document.getElementById('camera-canvas'); canvas.width=video.videoWidth; canvas.height=video.videoHeight; canvas.getContext('2d').drawImage(video,0,0); let foto=canvas.toDataURL('image/jpeg'); if(tipoFotoAtual==='talhao') fotosTemp.push(foto); else fotosOcorrenciaTemp.push(foto); atualizarPreviewFotos(tipoFotoAtual); fecharCamera(); }
-        function atualizarPreviewFotos(tipo) { let preview=tipo==='talhao'?document.getElementById('fotosPreview'):document.getElementById('fotosOcorrenciaPreview'); let fotos=tipo==='talhao'?fotosTemp:fotosOcorrenciaTemp; preview.innerHTML=fotos.map((f,i)=>`<div class="foto-item"><img src="${f}"><button onclick="removerFoto(${i},'${tipo}')">×</button></div>`).join(''); }
-        function removerFoto(idx,tipo) { if(tipo==='talhao') fotosTemp.splice(idx,1); else fotosOcorrenciaTemp.splice(idx,1); atualizarPreviewFotos(tipo); }
-
-        // Navegação
-        function mostrarDashboard() {
-            atualizarMenu(); event.target.classList.add('ativo');
-            let areaTotal = talhoes.reduce((a,t)=>a+(t.area||0),0);
-            let criticos = monitoramentos.filter(m=>m.severidade==='critica');
-            let html='';
-            if(criticos.length) html+=`<div class="alerta-card"><i class="fas fa-exclamation-triangle"></i><div><strong>${criticos.length} alertas críticos!</strong></div></div>`;
-            html+=`<div class="stats-grid"><div class="stat-card"><h3>${produtores.length}</h3><p>Produtores</p></div><div class="stat-card"><h3>${propriedades.length}</h3><p>Propriedades</p></div><div class="stat-card"><h3>${talhoes.length}</h3><p>Talhões</p></div><div class="stat-card"><h3>${formatarNumeroBR(areaTotal)}</h3><p>Hectares</p></div></div>`;
-            html+=`<h3>Últimos Monitoramentos</h3><div class="cards-grid">`;
-            monitoramentos.slice(-5).reverse().forEach(m=>{ let t=talhoes.find(t=>t.id===m.talhaoId); html+=`<div class="card"><h3>${t?.nome||'Talhão'}</h3><p>${new Date(m.dataHora).toLocaleString('pt-BR')}</p><p>${m.responsavel}</p><span class="badge badge-${m.severidade}">${m.severidade}</span></div>`; });
-            html+=`</div><button class="btn btn-share" onclick="compartilharResumo()">Compartilhar</button>`;
-            document.getElementById('conteudo').innerHTML = html;
-        }
-        function mostrarProdutores() { atualizarMenu(); event.target.classList.add('ativo'); let html=`<button class="btn" onclick="abrirModalProdutor()">Novo Produtor</button><div class="cards-grid">`; produtores.forEach(p=>{ html+=`<div class="card"><div class="card-actions"><button onclick="editarProdutor(${p.id})"><i class="fas fa-edit"></i></button><button onclick="deletarProdutor(${p.id})"><i class="fas fa-trash"></i></button></div><h3>${p.nome}</h3><p>${p.documento||''}</p><p>${p.telefone||''}</p></div>`; }); html+=`</div>`; document.getElementById('conteudo').innerHTML=html; }
-        function mostrarPropriedades() { atualizarMenu(); event.target.classList.add('ativo'); let html=`<button class="btn" onclick="abrirModalPropriedade()">Nova Propriedade</button><div class="cards-grid">`; propriedades.forEach(p=>{ let prod=produtores.find(pr=>pr.id===p.produtorId); html+=`<div class="card"><div class="card-actions"><button onclick="deletarPropriedade(${p.id})"><i class="fas fa-trash"></i></button></div><h3>${p.nome}</h3><p>${prod?.nome||'N/A'}</p><p>${p.area||0} ha</p></div>`; }); html+=`</div>`; document.getElementById('conteudo').innerHTML=html; }
-        function mostrarTalhoes() { atualizarMenu(); event.target.classList.add('ativo'); let html=`<button class="btn" onclick="abrirModalTalhao()">Novo Talhão</button><div class="cards-grid">`; talhoes.forEach(t=>{ let prop=propriedades.find(p=>p.id===t.propriedadeId); html+=`<div class="card"><div class="card-actions"><button onclick="deletarTalhao(${t.id})"><i class="fas fa-trash"></i></button></div><h3>${t.nome}</h3><p>${prop?.nome||'N/A'}</p><p>${t.cultura}</p><p>${formatarNumeroBR(t.area)} ha</p></div>`; }); html+=`</div>`; document.getElementById('conteudo').innerHTML=html; }
-        function mostrarMonitoramentos() { atualizarMenu(); event.target.classList.add('ativo'); let html=`<button class="btn" onclick="abrirModalMonitoramento()">Novo Monitoramento</button><div class="cards-grid">`; monitoramentos.forEach(m=>{ let t=talhoes.find(t=>t.id===m.talhaoId); html+=`<div class="card"><h3>${t?.nome||'Talhão'}</h3><p>${new Date(m.dataHora).toLocaleString('pt-BR')}</p><p>${m.responsavel}</p><span class="badge badge-${m.severidade}">${m.severidade}</span></div>`; }); html+=`</div>`; document.getElementById('conteudo').innerHTML=html; }
-        function mostrarGraficos() { atualizarMenu(); event.target.classList.add('ativo'); let contagem={}; monitoramentos.forEach(m=>{ if(m.pragas) m.pragas.forEach(p=>contagem[p.nome]=(contagem[p.nome]||0)+1); }); let ordenadas=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,10); let html=`<h2>Gráficos</h2><div class="chart-container"><canvas id="graficoPragas"></canvas></div>`; document.getElementById('conteudo').innerHTML=html; setTimeout(()=>{ let ctx=document.getElementById('graficoPragas').getContext('2d'); new Chart(ctx,{type:'bar',data:{labels:ordenadas.map(p=>p[0]),datasets:[{label:'Ocorrências',data:ordenadas.map(p=>p[1]),backgroundColor:'#CD853F'}]}}); },100); }
-        function compartilharResumo() { let texto=`🌱 Cultivar\nProdutores: ${produtores.length}\nPropriedades: ${propriedades.length}\nTalhões: ${talhoes.length}\nMonitoramentos: ${monitoramentos.length}`; window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`,'_blank'); }
-
-        // CRUD
-        function abrirModalProdutor(id=null) { if(id){ let p=produtores.find(p=>p.id===id); document.getElementById('produtorId').value=p.id; document.getElementById('produtorNome').value=p.nome; document.getElementById('produtorDocumento').value=p.documento||''; document.getElementById('produtorTelefone').value=p.telefone||''; document.getElementById('produtorEmail').value=p.email||''; } else { document.getElementById('produtorId').value=''; document.getElementById('produtorNome').value=''; document.getElementById('produtorDocumento').value=''; document.getElementById('produtorTelefone').value=''; document.getElementById('produtorEmail').value=''; } document.getElementById('modalProdutor').style.display='flex'; }
-        function salvarProdutor() { let id=document.getElementById('produtorId').value, nome=document.getElementById('produtorNome').value; if(!nome){ alert('Nome obrigatório'); return; } let produtor={id:id?parseInt(id):produtores.length+1,nome,documento:document.getElementById('produtorDocumento').value,telefone:document.getElementById('produtorTelefone').value,email:document.getElementById('produtorEmail').value}; if(id) produtores[produtores.findIndex(p=>p.id===parseInt(id))]=produtor; else produtores.push(produtor); localStorage.setItem('produtores',JSON.stringify(produtores)); fecharModal('produtor'); mostrarProdutores(); }
-        function editarProdutor(id){ abrirModalProdutor(id); }
-        function deletarProdutor(id){ if(confirm('Excluir?')){ produtores=produtores.filter(p=>p.id!==id); localStorage.setItem('produtores',JSON.stringify(produtores)); mostrarProdutores(); } }
-        function abrirModalPropriedade(){ let select=document.getElementById('propProdutorId'); select.innerHTML='<option value="">Selecione</option>'+produtores.map(p=>`<option value="${p.id}">${p.nome}</option>`).join(''); document.getElementById('modalPropriedade').style.display='flex'; }
-        function salvarPropriedade(){ let nome=document.getElementById('propNome').value, produtorId=parseInt(document.getElementById('propProdutorId').value); if(!nome||!produtorId){ alert('Nome e Produtor obrigatórios'); return; } propriedades.push({id:propriedades.length+1,nome,produtorId,area:document.getElementById('propArea').value,endereco:document.getElementById('propEndereco').value}); localStorage.setItem('propriedades',JSON.stringify(propriedades)); fecharModal('propriedade'); mostrarPropriedades(); }
-        function deletarPropriedade(id){ if(confirm('Excluir?')){ propriedades=propriedades.filter(p=>p.id!==id); localStorage.setItem('propriedades',JSON.stringify(propriedades)); mostrarPropriedades(); } }
-        function abrirModalTalhao(){ let select=document.getElementById('talhaoPropriedadeId'); select.innerHTML='<option value="">Selecione</option>'+propriedades.map(p=>`<option value="${p.id}">${p.nome}</option>`).join(''); document.getElementById('modalTalhao').style.display='flex'; fotosTemp=[]; pontos=[]; document.getElementById('fotosPreview').innerHTML=''; document.getElementById('contadorPontos').innerHTML='0'; document.getElementById('talhaoArea').innerHTML='0,00'; setTimeout(()=>inicializarMapaDesenho(),200); }
-        function salvarTalhao(){ let nome=document.getElementById('talhaoNome').value, propId=parseInt(document.getElementById('talhaoPropriedadeId').value); if(!nome||!propId){ alert('Nome e Propriedade obrigatórios'); return; } if(pontos.length<3){ alert('Desenhe o talhão no mapa primeiro'); return; } let area=converterParaNumero(document.getElementById('talhaoArea').innerHTML); talhoes.push({id:talhoes.length+1,nome,propriedadeId:propId,cultura:document.getElementById('talhaoCultura').value,dataPlantio:document.getElementById('talhaoDataPlantio').value,obs:document.getElementById('talhaoObs').value,area:area,pontos:pontos.map(p=>({lat:p.lat,lng:p.lng})),fotos:fotosTemp}); localStorage.setItem('talhoes',JSON.stringify(talhoes)); fecharModal('talhao'); mostrarTalhoes(); }
-        function deletarTalhao(id){ if(confirm('Excluir?')){ talhoes=talhoes.filter(t=>t.id!==id); localStorage.setItem('talhoes',JSON.stringify(talhoes)); mostrarTalhoes(); } }
-        function abrirModalMonitoramento(talhaoId=null){ let select=document.getElementById('monitoramentoTalhaoId'); select.innerHTML='<option value="">Selecione</option>'+talhoes.map(t=>`<option value="${t.id}">${t.nome}</option>`).join(''); if(talhaoId) select.value=talhaoId; let agora=new Date(); agora.setMinutes(agora.getMinutes()-agora.getTimezoneOffset()); document.getElementById('monitoramentoDataHora').value=agora.toISOString().slice(0,16); fotosOcorrenciaTemp=[]; pragasSelecionadas=[]; document.getElementById('fotosOcorrenciaPreview').innerHTML=''; document.getElementById('pragasSelecionadas').innerHTML=''; document.getElementById('modalMonitoramento').style.display='flex'; if(talhaoId) carregarPragas(); }
-        function carregarPragas(){ let t=talhoes.find(t=>t.id==document.getElementById('monitoramentoTalhaoId').value); let container=document.getElementById('pragasComuns'); if(t&&pragasPorCultura[t.cultura]){ container.innerHTML=pragasPorCultura[t.cultura].map(p=>`<div class="praga-item"><input type="checkbox" onchange="selecionarPraga(this,'${p.nome}','${p.tipo}')"><label>${p.nome}</label><span class="praga-tipo tipo-${p.tipo}">${p.tipo}</span></div>`).join(''); } }
-        function selecionarPraga(cb,nome,tipo){ if(cb.checked) pragasSelecionadas.push({nome,tipo}); else pragasSelecionadas=pragasSelecionadas.filter(p=>p.nome!==nome); atualizarPragasSelecionadas(); }
-        function adicionarPragaManual(){ let nome=document.getElementById('novaPragaNome').value, tipo=document.getElementById('novaPragaTipo').value; if(nome){ pragasSelecionadas.push({nome,tipo}); document.getElementById('novaPragaNome').value=''; atualizarPragasSelecionadas(); } }
-        function atualizarPragasSelecionadas(){ document.getElementById('pragasSelecionadas').innerHTML=pragasSelecionadas.map(p=>`<div class="praga-item"><span>${p.nome}</span><span class="praga-tipo tipo-${p.tipo}">${p.tipo}</span></div>`).join(''); }
-        function salvarMonitoramento(){ let talhaoId=parseInt(document.getElementById('monitoramentoTalhaoId').value), data=document.getElementById('monitoramentoDataHora').value, resp=document.getElementById('responsavelNome').value, severidade=document.getElementById('monitoramentoSeveridade').value; if(!talhaoId||!data||!resp){ alert('Preencha todos os campos'); return; } monitoramentos.push({id:monitoramentos.length+1,talhaoId,dataHora:data,responsavel:resp,severidade,pragas:pragasSelecionadas,observacoes:document.getElementById('monitoramentoObs').value,fotos:fotosOcorrenciaTemp}); localStorage.setItem('monitoramentos',JSON.stringify(monitoramentos)); fecharModal('monitoramento'); mostrarMonitoramentos(); }
-        function fecharModal(tipo){ document.getElementById(`modal${tipo.charAt(0).toUpperCase()+tipo.slice(1)}`).style.display='none'; if(tipo==='talhao'&&mapa) mapa.remove(); }
-        function atualizarMenu(){ document.querySelectorAll('.menu-btn').forEach(b=>b.classList.remove('ativo')); }
-        
-        mostrarDashboard();
-    </script>
-</body>
-</html>
+    steps:
+      - name: 🔽 Baixar código
+        uses: actions/checkout@v4
+      
+      - name: ⚙️ Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: ⚙️ Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: 📦 Instalar Bubblewrap
+        run: |
+          npm install -g @bubblewrap/cli
+          echo "✅ Bubblewrap instalado"
+      
+      - name: 📁 Criar estrutura
+        run: |
+          mkdir -p www
+          cp index.html www/
+          echo "✅ Estrutura criada"
+      
+      - name: 📄 Criar manifest.json
+        run: |
+          cat > manifest.json << 'EOF'
+          {
+            "name": "Cultivar",
+            "short_name": "Cultivar",
+            "description": "Gestão Agrícola",
+            "start_url": "index.html",
+            "display": "standalone",
+            "theme_color": "#CD853F",
+            "background_color": "#D2B48C",
+            "icons": [
+              {
+                "src": "icon.png",
+                "sizes": "192x192",
+                "type": "image/png"
+              }
+            ]
+          }
+          EOF
+          echo "✅ Manifest criado"
+      
+      - name: 🔨 Gerar APK com Bubblewrap
+        run: |
+          npx @bubblewrap/cli init --manifest manifest.json
+          npx @bubblewrap/cli build
+          echo "✅ APK gerado"
+      
+      - name: 📂 Procurar APK
+        run: |
+          find . -name "*.apk" -exec cp {} ./cultivar.apk \; 2>/dev/null || echo "APK não encontrado"
+          ls -la
+      
+      - name: 📤 Upload do APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cultivar-APK
+          path: |
+            *.apk
+            **/*.apk
